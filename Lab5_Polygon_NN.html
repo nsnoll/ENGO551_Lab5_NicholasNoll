@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta content="utf-8" http-equiv="encoding">
+        <title>Simplify Drawing</title>
+
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin=""/>
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.4.2/leaflet.draw.css"/>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.4.2/leaflet.draw.js"></script>
+
+        <script src="https://unpkg.com/@turf/turf@5.1.6/turf.min.js"></script>
+
+        <link rel="stylesheet" href="../static/styles/polyline_on_map.css">
+        <style>
+		 #map {
+			position: absolute;
+			
+			width: 100%;
+			height: 90%;
+		   
+		  }
+		  
+		  #simplify{
+			position: absolute;
+			bottom: 10px;
+			margin-left: 10px;
+			margin-top: 710px;
+			
+			width: 100px;
+			
+		   
+			height: 45px;
+			font-size: large;
+
+
+		  }
+		  </style>
+    </head>
+    <body>
+        <div id="map"></div>
+        <button id="simplify">Simplify</button>
+        <script>
+	// adding mapbox map
+var grayLayer=L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+  attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, ' +
+  'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+  maxZoom: 20,
+  id: 'mapbox/dark-v10', 
+  tileSize: 512,
+  zoomOffset: -1,
+  accessToken: 'pk.eyJ1IjoiYWhtZWRzeWQiLCJhIjoiY2tsaWtvemlqMGE0czJ4cGxlaHMwZGUzNyJ9.ZqoUVoiuHS9LzOvahBnWKw'
+});
+
+var map = L.map('map',{zoomControl: true, drawControl: true}).setView([51.05, -114.075], 13);
+map.addLayer(grayLayer);
+
+map.zoomControl.setPosition('bottomright');
+
+
+var polyline=[]
+var editableLayers = new L.FeatureGroup();
+map.addLayer(editableLayers);
+
+var drawingOps = { 
+  position: 'topright',
+  edit: {
+    featureGroup: editableLayers, 
+    remove: false //doesbt remove drawn line
+  }
+};
+
+// draw control 
+var drawControl = new L.Control.Draw(drawingOps); // from https://leaflet.github.io/Leaflet.draw/docs/leaflet-draw-latest.html
+map.addControl(drawControl);
+
+drawControlEdit = new L.Control.Draw({ // edits
+  edit: {
+    featureGroup: editableLayers,
+    edit: false
+  },
+  draw: false
+});
+var layerGroup =  new L.FeatureGroup();
+var simplified;
+var simplified_created=0; // creation of simplified line
+map.on('draw:created', function(e) {
+  var type = e.layerType,
+  layer = e.layer;
+  editableLayers.addLayer(layer);
+  simplified_created=0;
+  polyline=layer.getLatLngs()
+});
+
+
+  document.getElementById("simplify").addEventListener("click", function() {
+
+  
+
+  console.log(polyline.length);
+  
+
+  var results = polyline.map((item, index) => { // returns the simplfied line
+      return [item.lng, item.lat];
+  });
+
+  console.log("results");
+  console.log(results);
+  var geojson = turf.lineString(results);
+
+  var options = {tolerance: 0.02, highQuality: true};
+
+  simplified = turf.simplify(geojson, options);
+  console.log("simplified:")
+  console.log(simplified)
+
+
+  
+  L.geoJSON(simplified).addTo(map);
+  simplified_created=1;
+  
+});
+
+		
+		
+		</script>
+        
+
+    </body>
+</html>
+
